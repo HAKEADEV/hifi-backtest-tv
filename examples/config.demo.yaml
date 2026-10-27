@@ -1,0 +1,25 @@
+title: "Demo: EMA cross, BTCUSDT 15m, futures (reference) vs spot (candidate)"
+output: examples/sample_output
+bar: 15min
+pip_size: 1.0          # 1 USD "pip" for BTC
+server_tz: "NY+7"
+feeds:
+  reference: {type: binance, path: "examples/data/futures_BTCUSDT/*.csv"}
+  candidate: {type: binance, path: "examples/data/spot_BTCUSDT/*.csv"}
+  alternate: {type: binance, path: "examples/data/spot_BTCFDUSD/*.csv"}
+rule:
+  id: ema_cross
+  params: {fast: 9, slow: 21, htf_tf: 4h, htf_len: 50}
+match: {tol_bars: 1}
+perf:
+  k_atr: 1.0
+  horizon: 32
+  random_sims: 300
+  costs:
+    - {name: zero, type: zero}
+    - {name: fixed_5usd, type: fixed, pips: 5}
+    - {name: time_of_day, type: tod, default: 3, pips_by_hour: {0: 8, 1: 8, 2: 6, 21: 6, 22: 8, 23: 8}}
+  walk_forward:
+    train_weeks: 4
+    test_weeks: 1
+    grid: {fast: [5, 9, 13], slow: [21, 34, 55]}

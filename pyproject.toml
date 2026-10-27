@@ -1,0 +1,15 @@
+[project]
+name = "hifi-backtest-tv"
+version = "0.1.0"
+description = "High-fidelity backtest parity toolkit: make TradingView-style replicas match MT5 broker results"
+requires-python = ">=3.10"
+dependencies = ["pandas>=2.0", "numpy", "matplotlib", "pyyaml"]
+[project.optional-dependencies]
+dev = ["pytest"]
+[project.scripts]
+hifi = "hifi.cli:main"
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+[tool.setuptools.packages.find]
+include = ["hifi*"]

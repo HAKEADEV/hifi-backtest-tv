@@ -1,0 +1,25 @@
+//@version=6
+// Example rule matching hifi/replica/ema_cross.py (public EMA crossover).
+indicator("HiFi example: EMA cross", overlay = true)
+fastLen = input.int(9,  "Fast EMA")
+slowLen = input.int(21, "Slow EMA")
+useHtf  = input.bool(true, "HTF trend filter")
+htfTf   = input.timeframe("240", "HTF timeframe")
+htfLen  = input.int(50, "HTF EMA length")
+
+f = ta.ema(close, fastLen)
+s = ta.ema(close, slowLen)
+// Non-repainting HTF: previous confirmed HTF bar, same as hifi htf(mode="confirmed")
+htfEma = request.security(syminfo.tickerid, htfTf, ta.ema(close, htfLen)[1], lookahead = barmerge.lookahead_on)
+
+buy  = ta.crossover(f, s)  and (not useHtf or close > htfEma) and barstate.isconfirmed
+sell = ta.crossunder(f, s) and (not useHtf or close < htfEma) and barstate.isconfirmed
+
+plot(f, "Fast", color.teal)
+plot(s, "Slow", color.orange)
+plotshape(buy,  "Buy",  shape.triangleup,   location.belowbar, color.green)
+plotshape(sell, "Sell", shape.triangledown, location.abovebar, color.red)
+alertcondition(buy,  "Buy",  "EMA cross buy")
+alertcondition(sell, "Sell", "EMA cross sell")
+// Export for parity checks: Data Window -> export chart data, compare with `hifi run`.
+plot(buy ? 1 : sell ? -1 : 0, "SIG", display = display.data_window)
