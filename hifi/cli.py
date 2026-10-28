@@ -67,7 +67,26 @@ def main(argv=None):
     ap = argparse.ArgumentParser(prog="hifi")
     sub = ap.add_subparsers(dest="cmd", required=True)
     r = sub.add_parser("run"); r.add_argument("--config", required=True)
+    f = sub.add_parser("fetch", help="download bars automatically (no login)")
+    f.add_argument("--symbol", required=True, help="EURUSD, XAUUSD, BTCUSDT, AAPL, BYBIT:BTC/USDT ...")
+    f.add_argument("--tf", default="15m")
+    f.add_argument("--from", dest="start", required=True)
+    f.add_argument("--to", dest="end", required=True)
+    f.add_argument("--source", default="auto", choices=["auto", "dukascopy", "binance", "ccxt", "yfinance"])
+    f.add_argument("--side", default="bid", choices=["bid", "ask", "mid"], help="dukascopy only")
+    f.add_argument("--market", default="spot", choices=["spot", "futures"], help="binance only")
+    f.add_argument("--time", dest="time_mode", default="utc", choices=["utc", "broker"],
+                   help="broker = NY+7 with DST (MT-style server time)")
+    f.add_argument("--cache", default=".hifi_cache/dukascopy")
+    f.add_argument("--workers", type=int, default=2, help="parallel downloads (Dukascopy rate-limits; keep low)")
+    f.add_argument("--out", required=True)
     a = ap.parse_args(argv)
+    if a.cmd == "fetch":
+        from .fetch import fetch, write_csv
+        src, df = fetch(a.symbol, a.tf, a.start, a.end, a.source, a.side, a.market, a.cache, a.workers)
+        p = write_csv(df, a.out, a.time_mode)
+        print(f"{src}: {len(df)} bars {df.index.min()} -> {df.index.max()} -> {p}")
+        return
     cfg = yaml.safe_load(Path(a.config).read_text())
     run(cfg)
 

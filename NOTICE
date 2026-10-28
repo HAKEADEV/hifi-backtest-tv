@@ -1,0 +1,9 @@
+HiFi Backtest for TradingView — MIT licensed code only.
+
+This repository contains NO market data. `hifi fetch` downloads data at run time
+from third-party sources (Dukascopy, Binance data.binance.vision, exchanges via ccxt,
+Yahoo Finance via yfinance). That data, and any data exported from Tick Data Suite,
+TradingView or MetaTrader, is subject to the respective provider's terms of use and
+is not redistributed here. Do not commit downloaded data to public repositories.
+Dukascopy is a trademark of Dukascopy Bank SA; Tick Data Suite of Eareview.net;
+TradingView of TradingView Inc. No affiliation or endorsement.

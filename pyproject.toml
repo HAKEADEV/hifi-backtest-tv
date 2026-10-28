@@ -1,12 +1,14 @@
 [project]
 license = { text = "MIT" }
 name = "hifi-backtest-tv"
-version = "0.1.0"
-description = "High-fidelity backtest parity toolkit: make TradingView-style replicas match MT5 broker results"
+version = "0.2.0"
+description = "High-fidelity backtest toolkit: auto-fetch clean data and validate TradingView (Pine) results; MT5 parity optional"
 requires-python = ">=3.10"
 dependencies = ["pandas>=2.0", "numpy", "matplotlib", "pyyaml"]
 [project.optional-dependencies]
 dev = ["pytest"]
+stocks = ["yfinance"]
+exchanges = ["ccxt"]
 [project.scripts]
 hifi = "hifi.cli:main"
 [build-system]

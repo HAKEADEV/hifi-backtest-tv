@@ -1,0 +1,24 @@
+# Demo 2: one week of EURUSD 15m (2025-01-06..13; Dukascopy rate-limits, so kept short) from Dukascopy (free, automatic). Reference = BID bars
+# (what MT-style brokers chart), candidate = MID bars (what many TradingView FX
+# feeds show). Fetch first with `make demo-fx` (or the two `hifi fetch` lines in README).
+title: "Demo: EMA cross, EURUSD 15m, Dukascopy BID (reference) vs MID (candidate)"
+output: examples/sample_output_eurusd
+bar: 15min
+pip_size: 0.0001
+server_tz: "NY+7"
+feeds:
+  reference: {type: hifi, path: "examples/data/EURUSD_15m_bid.csv"}
+  candidate: {type: hifi, path: "examples/data/EURUSD_15m_mid.csv"}
+  alternate: {type: hifi, path: "examples/data/EURUSD_15m_ask.csv"}
+rule:
+  id: ema_cross
+  params: {fast: 9, slow: 21, htf_tf: 4h, htf_len: 50}
+match: {tol_bars: 1}
+perf:
+  k_atr: 1.0
+  horizon: 32
+  random_sims: 300
+  costs:
+    - {name: zero, type: zero}
+    - {name: fixed_0.8pip, type: fixed, pips: 0.8}
+    - {name: time_of_day, type: tod, default: 0.8, pips_by_hour: {21: 3, 22: 2, 23: 1.5}}

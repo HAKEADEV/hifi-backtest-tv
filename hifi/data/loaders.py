@@ -69,11 +69,63 @@ def load_binance(path) -> pd.DataFrame:
     return normalize(pd.concat(frames))
 
 
-LOADERS = {"mt5": load_mt5_csv, "histdata": load_histdata, "dukascopy": load_dukascopy, "binance": load_binance}
+def load_hifi_csv(path, time_mode="utc", server_tz="NY+7") -> pd.DataFrame:
+    """CSV written by `hifi fetch` (time,open,high,low,close,volume)."""
+    frames = [pd.read_csv(f, parse_dates=["time"], index_col="time") for f in _files(path)]
+    out = pd.concat(frames)
+    if time_mode == "broker":
+        out.index = from_server_time(out.index, server_tz)
+    return normalize(out)
+
+
+def load_tradingview(path, tz="UTC") -> pd.DataFrame:
+    """TradingView 'Export chart data' CSV: time (unix seconds or ISO8601 with offset),
+    open, high, low, close[, Volume, indicator columns...]. Extra columns are ignored."""
+    frames = []
+    for f in _files(path):
+        df = pd.read_csv(f)
+        df.columns = [c.strip().lower() for c in df.columns]
+        t = df["time"]
+        if pd.api.types.is_numeric_dtype(t):
+            idx = pd.to_datetime(t, unit="s", utc=True)
+        else:
+            idx = pd.to_datetime(t, utc=False)
+            idx = pd.DatetimeIndex(idx)
+            idx = idx.tz_localize(tz) if idx.tz is None else idx
+        frames.append(pd.DataFrame({c: df[c].values for c in ["open", "high", "low", "close"]} |
+                                   {"volume": df["volume"].values if "volume" in df else 0.0},
+                                   index=pd.DatetimeIndex(idx)))
+    return normalize(pd.concat(frames))
+
+
+def load_tds_csv(path, columns=("date", "time", "open", "high", "low", "close", "volume"), sep=",",
+                 header=None, time_format=None, server_tz="0") -> pd.DataFrame:
+    """Tick Data Suite / MT-style bar export. ``columns`` names each column in order
+    (use 'datetime' for a single combined column, '_' to skip). ``server_tz`` is the
+    GMT offset chosen at export ('0', '+2' or 'NY+7')."""
+    frames = []
+    for f in _files(path):
+        df = pd.read_csv(f, sep=sep, header=header, names=list(columns) if header is None else None)
+        if header is not None:
+            df.columns = list(columns)
+        if "datetime" in df:
+            t = pd.to_datetime(df["datetime"].astype(str), format=time_format)
+        else:
+            t = pd.to_datetime(df["date"].astype(str) + " " + df["time"].astype(str), format=time_format)
+        frames.append(pd.DataFrame({c: df[c].values for c in ["open", "high", "low", "close"]} |
+                                   {"volume": df["volume"].values if "volume" in df else 0.0},
+                                   index=pd.DatetimeIndex(t)))
+    out = pd.concat(frames)
+    out.index = from_server_time(out.index, server_tz)
+    return normalize(out)
+
+
+LOADERS = {"mt5": load_mt5_csv, "histdata": load_histdata, "dukascopy": load_dukascopy, "binance": load_binance,
+           "hifi": load_hifi_csv, "tradingview": load_tradingview, "tds": load_tds_csv}
 
 
 def load(spec: dict) -> pd.DataFrame:
-    """spec = {type: mt5|histdata|dukascopy|binance, path: glob, ...loader kwargs}"""
+    """spec = {type: mt5|histdata|dukascopy|binance|hifi|tradingview|tds, path: glob, ...loader kwargs}"""
     spec = dict(spec)
     kind = spec.pop("type")
     return LOADERS[kind](**spec)
